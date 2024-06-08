@@ -1,19 +1,12 @@
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Payment.API.Consumers;
 using Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Payment.API
 {
@@ -36,6 +29,7 @@ namespace Payment.API
                 {
                     cfg.Host(Configuration.GetConnectionString("RabbitMQ"));
 
+                    //Stock.API de Send yaptýðýmýz için kendimiz kuyruk ismi yapmamýza gerek yok.
                     cfg.ReceiveEndpoint(RabbitMQSettingsConst.StockReservedEventQueueName, e =>
                     {
                         e.ConfigureConsumer<StockReservedEventConsumer>(context);

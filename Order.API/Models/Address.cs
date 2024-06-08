@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Order.API.Models
 {
+    /// <summary>
+    /// Ayrı bir tablo olmasın. Order tablosu içerisinde kolonları olsun.
+    /// </summary>
     [Owned]
     public class Address
     {

@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace Stock.API.Consumers
 {
+    /// <summary>
+    /// OrderCreatedEvent dinleyecek. Bu event Shared altında.
+    /// </summary>
     public class OrderCreatedEventConsumer : IConsumer<OrderCreatedEvent>
     {
         private readonly AppDbContext _context;
@@ -17,7 +20,10 @@ namespace Stock.API.Consumers
         private readonly ISendEndpointProvider _sendEndpointProvider;
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public OrderCreatedEventConsumer(AppDbContext context, ILogger<OrderCreatedEventConsumer> logger, ISendEndpointProvider sendEndpointProvider, IPublishEndpoint publishEndpoint)
+        public OrderCreatedEventConsumer(AppDbContext context,
+                                         ILogger<OrderCreatedEventConsumer> logger, 
+                                         ISendEndpointProvider sendEndpointProvider,
+                                         IPublishEndpoint publishEndpoint)
         {
             _context = context;
             _logger = logger;
@@ -25,25 +31,29 @@ namespace Stock.API.Consumers
             _publishEndpoint = publishEndpoint;
         }
 
+        /// <summary>
+        /// Kuyruktan dinleyecek olan metot. IConsumer dan gelir.
+        /// Başarılı başarısız bir response geri döner.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public async Task Consume(ConsumeContext<OrderCreatedEvent> context)
         {
             var stockResult = new List<bool>();
 
-            foreach (var item in context.Message.orderItems)
+            foreach (var item in context.Message.OrderItems)
             {
                 stockResult.Add(await _context.Stocks.AnyAsync(x => x.ProductId == item.ProductId && x.Count > item.Count));
             }
 
+            //Hepsi stokta var.
             if (stockResult.All(x => x.Equals(true)))
             {
-                foreach (var item in context.Message.orderItems)
+                foreach (var item in context.Message.OrderItems)
                 {
                     var stock = await _context.Stocks.FirstOrDefaultAsync(x => x.ProductId == item.ProductId);
-
                     if (stock != null)
-                    {
                         stock.Count -= item.Count;
-                    }
 
                     await _context.SaveChangesAsync();
                 }
@@ -57,13 +67,15 @@ namespace Stock.API.Consumers
                     Payment = context.Message.Payment,
                     BuyerId = context.Message.BuyerId,
                     OrderId = context.Message.OrderId,
-                    OrderItems = context.Message.orderItems
+                    OrderItems = context.Message.OrderItems
                 };
 
+                //Sadece Payment Servisi dinlicek.
                 await sendEndpoint.Send(stockReservedEvent);
             }
             else
             {
+                //Birden fazla dinleyen olabilir.Loglama gibi.
                 await _publishEndpoint.Publish(new StockNotReservedEvent()
                 {
                     OrderId = context.Message.OrderId,

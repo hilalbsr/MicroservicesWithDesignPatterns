@@ -1,11 +1,9 @@
 ﻿using MassTransit;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Order.API.DTOs;
 using Order.API.Models;
 using Shared;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,15 +17,26 @@ namespace Order.API.Controllers
 
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public OrdersController(AppDbContext context, IPublishEndpoint publishEndpoint)
+        //exchange değil de kuyruğa mesaj gönderme
+        private readonly ISendEndpointProvider _sendEndpointProvider;
+
+        public OrdersController(AppDbContext context, IPublishEndpoint publishEndpoint, ISendEndpointProvider sendEndpointProvider)
         {
             _context = context;
             _publishEndpoint = publishEndpoint;
+            _sendEndpointProvider = sendEndpointProvider;
         }
 
+        /// <summary>
+        /// Create Order
+        /// </summary>
+        /// <param name="orderCreate"></param>
+        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Create(OrderCreateDto orderCreate)
         {
+            #region CreateOrder
+
             var newOrder = new Models.Order
             {
                 BuyerId = orderCreate.BuyerId,
@@ -45,6 +54,10 @@ namespace Order.API.Controllers
 
             await _context.SaveChangesAsync();
 
+            #endregion
+
+            #region PublishCreateOrder
+
             var orderCreatedEvent = new OrderCreatedEvent()
             {
                 BuyerId = orderCreate.BuyerId,
@@ -61,10 +74,24 @@ namespace Order.API.Controllers
 
             orderCreate.orderItems.ForEach(item =>
             {
-                orderCreatedEvent.orderItems.Add(new OrderItemMessage { Count = item.Count, ProductId = item.ProductId });
+                orderCreatedEvent.OrderItems.Add(new OrderItemMessage
+                {
+                    Count = item.Count, 
+                    ProductId = item.ProductId
+                });
             });
 
+            //kuyruğa göndermek için
+            //Eğer bu mesaja subscribe olan yoksa boşa gider mesaj.
+            //Direk exchange gider.Kuyruğa değil.
+            //Buradaki dataları almak için mutlaka subscribe olmak lazım.
             await _publishEndpoint.Publish(orderCreatedEvent);
+
+            //Sadece 1 servis dinlicekse
+            //exchange değil de kuyruğa mesaj gönderme
+            //await _sendEndpointProvider.Send
+
+            #endregion
 
             return Ok();
         }

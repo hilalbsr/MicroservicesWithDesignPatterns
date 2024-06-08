@@ -1,21 +1,14 @@
 using MassTransit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Shared;
 using Stock.API.Consumers;
 using Stock.API.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Stock.API
 {
@@ -33,6 +26,7 @@ namespace Stock.API
         {
             services.AddMassTransit(x =>
             {
+                //Consumer'ýn bildirilmesi
                 x.AddConsumer<OrderCreatedEventConsumer>();
 
                 x.AddConsumer<PaymentFailedEventConsumer>();
@@ -40,7 +34,9 @@ namespace Stock.API
                 {
                     cfg.Host(Configuration.GetConnectionString("RabbitMQ"));
 
-                    cfg.ReceiveEndpoint(RabbitMQSettingsConst.StockOrderCreatedEventQueueName, e =>
+                    //Subscribe olucaðý kuyruk ismi 
+                    cfg.ReceiveEndpoint(RabbitMQSettingsConst.StockOrderCreatedEventQueueName,
+                        e =>
                     {
                         e.ConfigureConsumer<OrderCreatedEventConsumer>(context);
                     });
@@ -53,6 +49,8 @@ namespace Stock.API
             });
 
             services.AddMassTransitHostedService();
+
+            //Db InMemory
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseInMemoryDatabase("StockDb");

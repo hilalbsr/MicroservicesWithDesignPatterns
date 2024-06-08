@@ -31,13 +31,16 @@ namespace Order.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //RabbitMQ baðlantýsý
             services.AddMassTransit(x =>
             {
                 x.AddConsumer<PaymentCompletedEventConsumer>();
                 x.AddConsumer<PaymentFailedEventConsumer>();
                 x.AddConsumer<StockNotReservedEventConsumer>();
+
                 x.UsingRabbitMq((context, cfg) =>
                 {
+                    //Host ConnectionString
                     cfg.Host(Configuration.GetConnectionString("RabbitMQ"));
 
                     cfg.ReceiveEndpoint(RabbitMQSettingsConst.OrderPaymentCompletedEventQueueName, e =>
@@ -62,7 +65,9 @@ namespace Order.API
                 options.UseSqlServer(Configuration.GetConnectionString("SqlCon"));
             });
 
+            //masstransit'in yeni versiyonunda bu  methoda gerek yoktur.
             //services.AddMassTransitHostedService();
+
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

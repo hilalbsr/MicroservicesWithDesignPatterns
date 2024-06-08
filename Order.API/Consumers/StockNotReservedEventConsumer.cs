@@ -2,9 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Order.API.Models;
 using Shared;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Order.API.Consumers
@@ -31,11 +28,11 @@ namespace Order.API.Consumers
                 order.FailMessage = context.Message.Message;
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation($"Order (Id={context.Message.OrderId}) status changed : {order.Status}");
+                _logger.LogInformation($"Order (Id = {context.Message.OrderId}) status changed : {order.Status}");
             }
             else
             {
-                _logger.LogError($"Order (Id={context.Message.OrderId}) not found");
+                _logger.LogError($"Order (Id = {context.Message.OrderId}) not found");
             }
         }
     }
